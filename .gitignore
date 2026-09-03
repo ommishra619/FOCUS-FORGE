@@ -1,0 +1,15 @@
+# Build output
+**/bin/
+**/obj/
+
+# Local runtime data
+workspace.json
+agent-settings.json
+
+# The empty clone used for repository inspection
+/FOCUS-FORGE/
+
+# IDE files
+.vs/
+*.user
+*.suo
