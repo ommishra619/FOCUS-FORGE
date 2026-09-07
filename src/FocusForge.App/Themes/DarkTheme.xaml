@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Base Colors -->
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#0F172A" />
+    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#1E293B" />
+    <SolidColorBrush x:Key="InkBrush" Color="#F8FAFC" />
+    <SolidColorBrush x:Key="MutedBrush" Color="#94A3B8" />
+    <SolidColorBrush x:Key="PanelBrush" Color="#1E293B" />
+    <SolidColorBrush x:Key="PanelAltBrush" Color="#334155" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#3B82F6" />
+    <SolidColorBrush x:Key="WarmBrush" Color="#F6AD55" />
+    <SolidColorBrush x:Key="GraphGridBrush" Color="#334155" />
+    <SolidColorBrush x:Key="ProgressBackgroundBrush" Color="#0F172A" />
+    
+    <!-- Component Colors -->
+    <SolidColorBrush x:Key="NavButtonHoverBrush" Color="#334155" />
+    <SolidColorBrush x:Key="PrimaryButtonForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="GhostButtonBackgroundBrush" Color="#334155" />
+    <SolidColorBrush x:Key="GhostButtonBorderBrush" Color="#475569" />
+
+    <!-- Schedule Blocks -->
+    <SolidColorBrush x:Key="ScheduleDeepWorkBg" Color="#1E3A8A" />
+    <SolidColorBrush x:Key="ScheduleDeepWorkFg" Color="#93C5FD" />
+    <SolidColorBrush x:Key="ScheduleLunchBg" Color="#7B341E" />
+    <SolidColorBrush x:Key="ScheduleLunchFg" Color="#FBD38D" />
+    <SolidColorBrush x:Key="ScheduleMoveBg" Color="#4C1D95" />
+    <SolidColorBrush x:Key="ScheduleMoveFg" Color="#D8B4FE" />
+    
+    <!-- Pastel accents -->
+    <SolidColorBrush x:Key="TaskWorkAccent" Color="#3B82F6" />
+    <SolidColorBrush x:Key="TaskNotesAccent" Color="#FBD38D" />
+    <SolidColorBrush x:Key="TaskMoveAccent" Color="#4FD1C5" />
+    <SolidColorBrush x:Key="TaskPlanAccent" Color="#D8B4FE" />
+</ResourceDictionary>

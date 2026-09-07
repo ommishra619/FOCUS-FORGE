@@ -18,10 +18,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     public ObservableCollection<FocusTask> Tasks { get; } = new()
     {
-        new FocusTask { Title = "Deep work session", Detail = "Finish the database schema", TimeLabel = "09:00 - 10:30", Accent = "#7EE7C7" },
-        new FocusTask { Title = "Review project notes", Detail = "Capture the next three actions", TimeLabel = "10:45 - 11:15", Accent = "#FFCF70" },
-        new FocusTask { Title = "Move your body", Detail = "A short walk outside", TimeLabel = "02:00 - 02:30", Accent = "#A6B8FF" },
-        new FocusTask { Title = "Plan tomorrow", Detail = "Close the day with intention", TimeLabel = "06:00 - 06:15", Accent = "#FF9B9B" }
+        new FocusTask { Title = "Deep work session", Detail = "Finish the database schema", TimeLabel = "09:00 - 10:30" },
+        new FocusTask { Title = "Review project notes", Detail = "Capture the next three actions", TimeLabel = "10:45 - 11:15" },
+        new FocusTask { Title = "Move your body", Detail = "A short walk outside", TimeLabel = "02:00 - 02:30" },
+        new FocusTask { Title = "Plan tomorrow", Detail = "Close the day with intention", TimeLabel = "06:00 - 06:15" }
     };
 
     public string FocusTimeLabel => _sessionFinished ? "Complete" : FormatRemaining(_focusEndsAt - DateTime.Now);
@@ -45,7 +45,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         editor.Owner = this;
         if (editor.ShowDialog() == true)
         {
-            Tasks.Add(new FocusTask { Title = editor.TaskTitle, Detail = editor.Detail, TimeLabel = editor.TimeLabel, Accent = "#7EE7C7" });
+            Tasks.Add(new FocusTask { Title = editor.TaskTitle, Detail = editor.Detail, TimeLabel = editor.TimeLabel });
             SaveWorkspace();
         }
     }
@@ -141,7 +141,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             Tasks.Clear();
             foreach (var task in _workspaceState.Tasks)
             {
-                Tasks.Add(new FocusTask { Title = task.Title, Detail = task.Detail, TimeLabel = task.TimeLabel, Accent = task.Accent, IsComplete = task.IsComplete });
+                Tasks.Add(new FocusTask { Title = task.Title, Detail = task.Detail, TimeLabel = task.TimeLabel, AccentKey = task.Accent, IsComplete = task.IsComplete });
             }
         }
 
@@ -162,7 +162,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             Title = task.Title,
             Detail = task.Detail,
             TimeLabel = task.TimeLabel,
-            Accent = task.Accent,
+            Accent = task.AccentKey,
             IsComplete = task.IsComplete
         }).ToList();
         _workspaceState.SaveAsync().GetAwaiter().GetResult();

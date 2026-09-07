@@ -41,6 +41,13 @@ public sealed class AgentHost : ApplicationContext
 
     private void EnforceLocks()
     {
+        if (_settings.IsLocked && _settings.LockUntilUtc is not null && DateTimeOffset.UtcNow >= _settings.LockUntilUtc)
+        {
+            _settings.IsLocked = false;
+            _settings.LockUntilUtc = null;
+            _settings.Save();
+        }
+
         if (!_settings.IsLocked)
         {
             return;
