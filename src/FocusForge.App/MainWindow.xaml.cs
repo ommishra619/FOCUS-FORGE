@@ -111,7 +111,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void WeeklyPlan_Click(object sender, RoutedEventArgs e) => ShowSection("WORKSPACE", "Weekly plan", "A clear shape for the week ahead.", showSchedule: true);
     private void FocusSessions_Click(object sender, RoutedEventArgs e) => ShowSection("WORKSPACE", "Focus sessions", FocusStatus, showTasks: false);
     private void ProtectedApps_Click(object sender, RoutedEventArgs e) => ShowSection("CONTROL", "Protected apps", "Your distractions stay closed while the rule is active.", showTasks: false);
-    private void Settings_Click(object sender, RoutedEventArgs e) => ShowSection("CONTROL", "Settings", "Local-only preferences and recovery controls.", showTasks: false);
+    private void Settings_Click(object sender, RoutedEventArgs e) => ShowSection("CONTROL", "Settings", "Local-only preferences and recovery controls.", showSettings: true);
 
     private void ShowToday()
     {
@@ -119,7 +119,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         SectionView.Visibility = Visibility.Collapsed;
     }
 
-    private void ShowSection(string eyebrow, string title, string description, bool showTasks = false, bool showSchedule = false)
+    private void ShowSection(string eyebrow, string title, string description, bool showTasks = false, bool showSchedule = false, bool showSettings = false)
     {
         TodayView.Visibility = Visibility.Collapsed;
         SectionView.Visibility = Visibility.Visible;
@@ -130,6 +130,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         SectionSchedule.Visibility = showSchedule ? Visibility.Visible : Visibility.Collapsed;
         AddTaskButton.Visibility = showTasks ? Visibility.Visible : Visibility.Collapsed;
         AddScheduleButton.Visibility = showSchedule ? Visibility.Visible : Visibility.Collapsed;
+        if (FindName("SettingsPanel") is System.Windows.UIElement settingsPanel) settingsPanel.Visibility = showSettings ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
     }
 
     private async void LoadWorkspaceAsync(object sender, RoutedEventArgs e)
@@ -202,4 +203,81 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         return remaining.ToString(@"hh\:mm\:ss");
     }
+
+    private void UpdateThemeButtons(System.Windows.Controls.Button? activeBtn)
+    {
+        if (SystemThemeBtn != null) SystemThemeBtn.Background = System.Windows.Media.Brushes.Transparent;
+        if (LightThemeBtn != null) LightThemeBtn.Background = System.Windows.Media.Brushes.Transparent;
+        if (DarkThemeBtn != null) DarkThemeBtn.Background = System.Windows.Media.Brushes.Transparent;
+        
+        if (activeBtn != null && Application.Current.Resources["PanelBrush"] is System.Windows.Media.Brush activeBrush)
+        {
+            activeBtn.Background = activeBrush;
+        }
+    }
+
+    private void SystemTheme_Click(object sender, RoutedEventArgs e)
+    {
+        App.ApplyTheme("DarkTheme");
+        UpdateThemeButtons(SystemThemeBtn);
+        if (ThemePresetComboBox != null) ThemePresetComboBox.SelectedIndex = -1;
+        OnPropertyChanged(nameof(ProtectionColor));
+        if (Tasks != null) foreach (var task in Tasks) task.RefreshTheme();
+    }
+
+    private void LightTheme_Click(object sender, RoutedEventArgs e)
+    {
+        App.ApplyTheme("LightTheme");
+        UpdateThemeButtons(LightThemeBtn);
+        if (ThemePresetComboBox != null) ThemePresetComboBox.SelectedIndex = -1;
+        OnPropertyChanged(nameof(ProtectionColor));
+        if (Tasks != null) foreach (var task in Tasks) task.RefreshTheme();
+    }
+
+    private void DarkTheme_Click(object sender, RoutedEventArgs e)
+    {
+        App.ApplyTheme("DarkTheme");
+        UpdateThemeButtons(DarkThemeBtn);
+        if (ThemePresetComboBox != null) ThemePresetComboBox.SelectedIndex = -1;
+        OnPropertyChanged(nameof(ProtectionColor));
+        if (Tasks != null) foreach (var task in Tasks) task.RefreshTheme();
+    }
+
+    private void ConfigureProtectedApps_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new ProtectedAppsDialog(new System.Collections.Generic.List<string>()) { Owner = this };
+        dialog.ShowDialog();
+    }
+
+    private void ChangeAccentColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.Button btn && btn.Tag is string hex)
+        {
+            var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
+            Application.Current.Resources["AccentBrush"] = new System.Windows.Media.SolidColorBrush(color);
+        }
+    }
+
+
+    private void ThemePresetComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (ThemePresetComboBox.SelectedItem is System.Windows.Controls.ComboBoxItem item && item.Tag is string themeName)
+        {
+            App.ApplyTheme(themeName);
+            UpdateThemeButtons(null);
+            
+            // Update the hex code text blocks based on the theme
+            if (BgColorText != null && FgColorText != null && AcColorText != null)
+            {
+                if (themeName == "RedWhiteTheme") { BgColorText.Text = "# FFFFFF"; FgColorText.Text = "# DC2626"; AcColorText.Text = "# DC2626"; }
+                else if (themeName == "PinkWhiteTheme") { BgColorText.Text = "# F472B6"; FgColorText.Text = "# FFFFFF"; AcColorText.Text = "# FFFFFF"; }
+                else if (themeName == "BlueWhiteTheme") { BgColorText.Text = "# 38BDF8"; FgColorText.Text = "# FFFFFF"; AcColorText.Text = "# FFFFFF"; }
+                else if (themeName == "BlackWhiteTheme") { BgColorText.Text = "# 000000"; FgColorText.Text = "# FFFFFF"; AcColorText.Text = "# FFFFFF"; }
+            }
+            
+            OnPropertyChanged(nameof(ProtectionColor));
+            if (Tasks != null) foreach (var task in Tasks) task.RefreshTheme();
+        }
+    }
+
 }

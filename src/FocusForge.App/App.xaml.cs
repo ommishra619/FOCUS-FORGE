@@ -5,14 +5,18 @@ namespace FocusForge.App;
 
 public partial class App : Application
 {
-    public static bool IsDarkTheme { get; private set; }
-
-    public static void ToggleTheme()
+    public static void ApplyTheme(string themeName)
     {
-        IsDarkTheme = !IsDarkTheme;
-        var themeName = IsDarkTheme ? "DarkTheme" : "LightTheme";
         var dict = new ResourceDictionary { Source = new Uri($"pack://application:,,,/FocusForge.App;component/Themes/{themeName}.xaml") };
-        Current.Resources.MergedDictionaries.Clear();
-        Current.Resources.MergedDictionaries.Add(dict);
+        var mergedDicts = Current.Resources.MergedDictionaries;
+        for (int i = 0; i < mergedDicts.Count; i++)
+        {
+            if (mergedDicts[i].Source != null && mergedDicts[i].Source.OriginalString.Contains("Themes/"))
+            {
+                mergedDicts[i] = dict;
+                return;
+            }
+        }
+        mergedDicts.Add(dict);
     }
 }
