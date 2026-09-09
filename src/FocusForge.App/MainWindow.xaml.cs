@@ -15,37 +15,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _sessionFinished;
     private AgentSettings _agentSettings = new();
     private WorkspaceState _workspaceState = new();
-    private readonly ProcessBlocker _processBlocker = new();
 
     public ObservableCollection<FocusTask> Tasks { get; } = new()
     {
-        new FocusTask { Title = "Deep work session", Detail = "Finish the database schema", TimeLabel = "09:00 - 10:30" },
-        new FocusTask { Title = "Review project notes", Detail = "Capture the next three actions", TimeLabel = "10:45 - 11:15" },
-        new FocusTask { Title = "Move your body", Detail = "A short walk outside", TimeLabel = "02:00 - 02:30" },
-        new FocusTask { Title = "Plan tomorrow", Detail = "Close the day with intention", TimeLabel = "06:00 - 06:15" }
+        new FocusTask { Title = "Deep work session", Detail = "Finish the database schema", TimeLabel = "09:00 - 10:30", Accent = "#7EE7C7" },
+        new FocusTask { Title = "Review project notes", Detail = "Capture the next three actions", TimeLabel = "10:45 - 11:15", Accent = "#FFCF70" },
+        new FocusTask { Title = "Move your body", Detail = "A short walk outside", TimeLabel = "02:00 - 02:30", Accent = "#A6B8FF" },
+        new FocusTask { Title = "Plan tomorrow", Detail = "Close the day with intention", TimeLabel = "06:00 - 06:15", Accent = "#FF9B9B" }
     };
 
-    public string CurrentDate { get; set; } = DateTime.Now.ToString("dddd, MMMM d");
-    
-    private string _userGreeting = "";
-    public string UserGreeting
-    {
-        get => _userGreeting;
-        set { _userGreeting = value; OnPropertyChanged(nameof(UserGreeting)); }
-    }
-
-    private string _currentGreeting = "";
-    public string CurrentGreeting
-    {
-        get => _currentGreeting;
-        set { _currentGreeting = value; OnPropertyChanged(nameof(CurrentGreeting)); }
-    }
-
     public string FocusTimeLabel => _sessionFinished ? "Complete" : FormatRemaining(_focusEndsAt - DateTime.Now);
-    public string FocusStatus => _sessionFinished ? "Session complete." : "Apps are protected until this session ends.";
-    public string ProtectionState => _sessionFinished ? "Unlocked" : "Locked";
+    public string FocusStatus => _sessionFinished ? "Session complete. Steam is ready to unlock." : "Steam is protected until this session ends.";
+    public string ProtectionState => _sessionFinished ? "Unlocked" : $"{_agentSettings.ProtectedProcessNames.Count} app(s) locked";
     public string ProtectionColor => _sessionFinished ? "#7EE7C7" : "#FF8D8D";
-    public Visibility FinishButtonVisibility => _sessionFinished ? Visibility.Collapsed : Visibility.Visible;
 
     public MainWindow()
     {
@@ -63,7 +45,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         editor.Owner = this;
         if (editor.ShowDialog() == true)
         {
-            Tasks.Add(new FocusTask { Title = editor.TaskTitle, Detail = editor.Detail, TimeLabel = editor.TimeLabel });
+            Tasks.Add(new FocusTask { Title = editor.TaskTitle, Detail = editor.Detail, TimeLabel = editor.TimeLabel, Accent = "#7EE7C7" });
             SaveWorkspace();
         }
     }
@@ -79,22 +61,20 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void FinishSession_Click(object sender, RoutedEventArgs e)
     {
-        EndSession();
+        _sessionFinished = true;
+        _agentSettings.IsLocked = false;
+        _agentSettings.Save();
+        _focusTimer.Stop();
         NotifyFocusChanged();
     }
 
     private void EmergencyUnlock_Click(object sender, RoutedEventArgs e)
     {
-        EndSession();
-        NotifyFocusChanged();
-    }
-
-    private void EndSession()
-    {
         _sessionFinished = true;
         _agentSettings.IsLocked = false;
         _agentSettings.Save();
         _focusTimer.Stop();
+        NotifyFocusChanged();
     }
 
     private void LockSteam_Click(object sender, RoutedEventArgs e)
@@ -105,9 +85,28 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _agentSettings.ProtectedProcessNames.Add("steam");
         }
 
-        _agentSettings.Save();
         _sessionFinished = false;
         _focusEndsAt = DateTime.Now.AddMinutes(25);
+        _agentSettings.LockUntilUtc = DateTimeOffset.UtcNow.AddMinutes(25);
+        _agentSettings.Save();
+        _focusTimer.Start();
+        NotifyFocusChanged();
+    }
+
+    private void ConfigureProtectedApps_Click(object sender, RoutedEventArgs e)
+    {
+        var editor = new ProtectedAppsDialog(_agentSettings.ProtectedProcessNames) { Owner = this };
+        if (editor.ShowDialog() != true)
+        {
+            return;
+        }
+
+        _agentSettings.ProtectedProcessNames = editor.ProcessNames.ToList();
+        _agentSettings.IsLocked = true;
+        _agentSettings.LockUntilUtc = editor.Duration == TimeSpan.Zero ? null : DateTimeOffset.UtcNow.Add(editor.Duration);
+        _agentSettings.Save();
+        _sessionFinished = false;
+        _focusEndsAt = editor.Duration == TimeSpan.Zero ? DateTime.Now.AddYears(1) : DateTime.Now.Add(editor.Duration);
         _focusTimer.Start();
         NotifyFocusChanged();
     }
@@ -131,7 +130,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void WeeklyPlan_Click(object sender, RoutedEventArgs e) => ShowSection("WORKSPACE", "Weekly plan", "A clear shape for the week ahead.", showSchedule: true);
     private void FocusSessions_Click(object sender, RoutedEventArgs e) => ShowSection("WORKSPACE", "Focus sessions", FocusStatus, showTasks: false);
     private void ProtectedApps_Click(object sender, RoutedEventArgs e) => ShowSection("CONTROL", "Protected apps", "Your distractions stay closed while the rule is active.", showTasks: false);
-    private void Settings_Click(object sender, RoutedEventArgs e) => ShowSection("CONTROL", "Settings", "Local-only preferences and recovery controls.", showSettings: true);
+    private void Settings_Click(object sender, RoutedEventArgs e) => ShowSection("CONTROL", "Settings", "Local-only preferences and recovery controls.", showTasks: false);
+
+    private void SystemTheme_Click(object sender, RoutedEventArgs e) => App.ApplyTheme("LightTheme");
+    private void LightTheme_Click(object sender, RoutedEventArgs e) => App.ApplyTheme("LightTheme");
+    private void DarkTheme_Click(object sender, RoutedEventArgs e) => App.ApplyTheme("DarkTheme");
+    private void ThemePresetComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (ThemePresetComboBox.SelectedItem is System.Windows.Controls.ComboBoxItem item && item.Tag is string themeName)
+        {
+            App.ApplyTheme(themeName);
+        }
+    }
 
     private void ShowToday()
     {
@@ -139,7 +149,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         SectionView.Visibility = Visibility.Collapsed;
     }
 
-    private void ShowSection(string eyebrow, string title, string description, bool showTasks = false, bool showSchedule = false, bool showSettings = false)
+    private void ShowSection(string eyebrow, string title, string description, bool showTasks = false, bool showSchedule = false)
     {
         TodayView.Visibility = Visibility.Collapsed;
         SectionView.Visibility = Visibility.Visible;
@@ -150,22 +160,18 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         SectionSchedule.Visibility = showSchedule ? Visibility.Visible : Visibility.Collapsed;
         AddTaskButton.Visibility = showTasks ? Visibility.Visible : Visibility.Collapsed;
         AddScheduleButton.Visibility = showSchedule ? Visibility.Visible : Visibility.Collapsed;
-        if (FindName("SettingsPanel") is System.Windows.UIElement settingsPanel) settingsPanel.Visibility = showSettings ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
     }
 
     private async void LoadWorkspaceAsync(object sender, RoutedEventArgs e)
     {
         _agentSettings = await AgentSettings.LoadAsync();
         _workspaceState = await WorkspaceState.LoadAsync();
-        
-        GenerateGreeting();
-        
         if (_workspaceState.Tasks.Count > 0)
         {
             Tasks.Clear();
             foreach (var task in _workspaceState.Tasks)
             {
-                Tasks.Add(new FocusTask { Title = task.Title, Detail = task.Detail, TimeLabel = task.TimeLabel, AccentKey = task.Accent, IsComplete = task.IsComplete });
+                Tasks.Add(new FocusTask { Title = task.Title, Detail = task.Detail, TimeLabel = task.TimeLabel, Accent = task.Accent, IsComplete = task.IsComplete });
             }
         }
 
@@ -179,35 +185,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(Schedule));
     }
 
-    private void GenerateGreeting()
-    {
-        var quotes = new[]
-        {
-            "The secret of getting ahead is getting started.",
-            "Small steps every day.",
-            "Focus on being productive instead of busy.",
-            "Strive for progress, not perfection.",
-            "Do what you can, with what you have, where you are.",
-            "It always seems impossible until it's done.",
-            "Discipline is choosing between what you want now and what you want most.",
-            "Where attention goes, energy flows."
-        };
-        
-        var random = new Random();
-        var quote = quotes[random.Next(quotes.Length)];
-        
-        string timeGreeting;
-        var hour = DateTime.Now.Hour;
-        if (hour < 12) timeGreeting = "Good morning";
-        else if (hour < 17) timeGreeting = "Good afternoon";
-        else timeGreeting = "Good evening";
-
-        var name = string.IsNullOrWhiteSpace(_agentSettings.UserName) ? "" : $", {_agentSettings.UserName}";
-        
-        UserGreeting = $"{timeGreeting}{name}.";
-        CurrentGreeting = quote;
-    }
-
     private void SaveWorkspace()
     {
         _workspaceState.Tasks = Tasks.Select(task => new StoredTask
@@ -215,7 +192,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             Title = task.Title,
             Detail = task.Detail,
             TimeLabel = task.TimeLabel,
-            Accent = task.AccentKey,
+            Accent = task.Accent,
             IsComplete = task.IsComplete
         }).ToList();
         _workspaceState.SaveAsync().GetAwaiter().GetResult();
@@ -227,14 +204,10 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (DateTime.Now >= _focusEndsAt)
         {
-            EndSession();
-        }
-        else if (_agentSettings.IsLocked)
-        {
-            foreach (var processName in _agentSettings.ProtectedProcessNames)
-            {
-                _processBlocker.CloseRunning(processName);
-            }
+            _sessionFinished = true;
+            _agentSettings.IsLocked = false;
+            _agentSettings.Save();
+            _focusTimer.Stop();
         }
 
         NotifyFocusChanged();
@@ -246,7 +219,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FocusStatus)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ProtectionState)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ProtectionColor)));
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FinishButtonVisibility)));
     }
 
     private void OnPropertyChanged(string propertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -260,95 +232,4 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         return remaining.ToString(@"hh\:mm\:ss");
     }
-
-    private void UpdateThemeButtons(System.Windows.Controls.Button? activeBtn)
-    {
-        if (SystemThemeBtn != null) SystemThemeBtn.Background = System.Windows.Media.Brushes.Transparent;
-        if (LightThemeBtn != null) LightThemeBtn.Background = System.Windows.Media.Brushes.Transparent;
-        if (DarkThemeBtn != null) DarkThemeBtn.Background = System.Windows.Media.Brushes.Transparent;
-        
-        if (activeBtn != null && Application.Current.Resources["PanelBrush"] is System.Windows.Media.Brush activeBrush)
-        {
-            activeBtn.Background = activeBrush;
-        }
-    }
-
-    private void SystemTheme_Click(object sender, RoutedEventArgs e)
-    {
-        App.ApplyTheme("DarkTheme");
-        UpdateThemeButtons(SystemThemeBtn);
-        if (ThemePresetComboBox != null) ThemePresetComboBox.SelectedIndex = -1;
-        OnPropertyChanged(nameof(ProtectionColor));
-        if (Tasks != null) foreach (var task in Tasks) task.RefreshTheme();
-    }
-
-    private void LightTheme_Click(object sender, RoutedEventArgs e)
-    {
-        App.ApplyTheme("LightTheme");
-        UpdateThemeButtons(LightThemeBtn);
-        if (ThemePresetComboBox != null) ThemePresetComboBox.SelectedIndex = -1;
-        OnPropertyChanged(nameof(ProtectionColor));
-        if (Tasks != null) foreach (var task in Tasks) task.RefreshTheme();
-    }
-
-    private void DarkTheme_Click(object sender, RoutedEventArgs e)
-    {
-        App.ApplyTheme("DarkTheme");
-        UpdateThemeButtons(DarkThemeBtn);
-        if (ThemePresetComboBox != null) ThemePresetComboBox.SelectedIndex = -1;
-        OnPropertyChanged(nameof(ProtectionColor));
-        if (Tasks != null) foreach (var task in Tasks) task.RefreshTheme();
-    }
-
-    private void ConfigureProtectedApps_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new ProtectedAppsDialog(_agentSettings.ProtectedProcessNames) { Owner = this };
-        if (dialog.ShowDialog() == true)
-        {
-            _agentSettings.ProtectedProcessNames = dialog.ProcessNames.ToList();
-            _agentSettings.IsLocked = true;
-            _agentSettings.LockUntilUtc = dialog.Duration.TotalMinutes > 0 ? DateTimeOffset.UtcNow.Add(dialog.Duration) : null;
-            _agentSettings.Save();
-            
-            _sessionFinished = false;
-            _focusEndsAt = dialog.Duration.TotalMinutes > 0 ? DateTime.Now.Add(dialog.Duration) : DateTime.MaxValue;
-            _focusTimer.Start();
-            NotifyFocusChanged();
-        }
-    }
-
-    private void ChangeAccentColor_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is System.Windows.Controls.Button btn && btn.Tag is string hex)
-        {
-            var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex);
-            Application.Current.Resources["AccentBrush"] = new System.Windows.Media.SolidColorBrush(color);
-        }
-    }
-
-
-    private void ThemePresetComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-    {
-        if (ThemePresetComboBox.SelectedItem is System.Windows.Controls.ComboBoxItem item && item.Tag is string themeName)
-        {
-            App.ApplyTheme(themeName);
-            UpdateThemeButtons(null);
-            
-            // Update the hex code text blocks based on the theme
-            if (BgColorText != null && FgColorText != null && AcColorText != null)
-            {
-                switch (themeName)
-                {
-                    case "RedWhiteTheme": BgColorText.Text = "# FFFFFF"; FgColorText.Text = "# DC2626"; AcColorText.Text = "# DC2626"; break;
-                    case "PinkWhiteTheme": BgColorText.Text = "# F472B6"; FgColorText.Text = "# FFFFFF"; AcColorText.Text = "# FFFFFF"; break;
-                    case "BlueWhiteTheme": BgColorText.Text = "# 38BDF8"; FgColorText.Text = "# FFFFFF"; AcColorText.Text = "# FFFFFF"; break;
-                    case "BlackWhiteTheme": BgColorText.Text = "# 000000"; FgColorText.Text = "# FFFFFF"; AcColorText.Text = "# FFFFFF"; break;
-                }
-            }
-            
-            OnPropertyChanged(nameof(ProtectionColor));
-            if (Tasks != null) foreach (var task in Tasks) task.RefreshTheme();
-        }
-    }
-
 }

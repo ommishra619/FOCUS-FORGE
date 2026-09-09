@@ -10,7 +10,7 @@ public sealed class AgentHost : ApplicationContext
     private readonly NotifyIcon _trayIcon;
     private readonly System.Windows.Forms.Timer _watchTimer;
     private readonly ProcessBlocker _processBlocker = new();
-    private readonly AgentSettings _settings;
+    private AgentSettings _settings;
 
     public AgentHost(AgentSettings settings)
     {
@@ -23,7 +23,7 @@ public sealed class AgentHost : ApplicationContext
             ContextMenuStrip = BuildMenu()
         };
 
-        _watchTimer = new System.Windows.Forms.Timer { Interval = 5000 };
+        _watchTimer = new System.Windows.Forms.Timer { Interval = 1000 };
         _watchTimer.Tick += (_, _) => EnforceLocks();
         _watchTimer.Start();
         EnforceLocks();
@@ -39,18 +39,11 @@ public sealed class AgentHost : ApplicationContext
         return menu;
     }
 
+    private readonly HashSet<string> _activeOverlays = new();
+
     private void EnforceLocks()
     {
-        using (var db = new AppDbContext())
-        {
-            var latest = System.Linq.Queryable.FirstOrDefault(db.AgentSettings, s => s.Id == _settings.Id);
-            if (latest != null)
-            {
-                _settings.IsLocked = latest.IsLocked;
-                _settings.ProtectedProcessNames = latest.ProtectedProcessNames;
-                _settings.LockUntilUtc = latest.LockUntilUtc;
-            }
-        }
+        _settings = AgentSettings.LoadAsync().GetAwaiter().GetResult();
 
         if (_settings.IsLocked && _settings.LockUntilUtc is not null && DateTimeOffset.UtcNow >= _settings.LockUntilUtc)
         {
@@ -61,15 +54,35 @@ public sealed class AgentHost : ApplicationContext
 
         if (!_settings.IsLocked)
         {
+            _activeOverlays.Clear();
             return;
         }
 
         foreach (var processName in _settings.ProtectedProcessNames)
         {
-            var closed = _processBlocker.CloseRunning(processName);
-            if (closed > 0)
+            var running = _processBlocker.FindRunning(processName);
+            if (running.Count > 0)
             {
-                _trayIcon.ShowBalloonTip(2500, "FocusForge", $"Closed {processName} while your focus rule is active.", ToolTipIcon.Info);
+                if (!_activeOverlays.Contains(processName))
+                {
+                    _activeOverlays.Add(processName);
+                    
+                    // Launch FocusForge.App with overlay arguments
+                    var appPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "FocusForge.App.exe");
+                    if (System.IO.File.Exists(appPath))
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = appPath,
+                            Arguments = $"--overlay \"{processName}\"",
+                            UseShellExecute = true
+                        });
+                    }
+                }
+            }
+            else
+            {
+                _activeOverlays.Remove(processName);
             }
         }
     }

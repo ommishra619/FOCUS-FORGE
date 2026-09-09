@@ -11,6 +11,7 @@ public sealed class FocusTask : INotifyPropertyChanged
     private string _detail = string.Empty;
     private string _timeLabel = string.Empty;
     private string _accentKey = "TaskWorkAccent";
+    private string? _accentOverride;
     private bool _isComplete;
 
     public Guid Id { get; init; } = Guid.NewGuid();
@@ -26,7 +27,15 @@ public sealed class FocusTask : INotifyPropertyChanged
             OnPropertyChanged(nameof(Accent));
         }
     }
-    public string Accent => ((System.Windows.Media.SolidColorBrush)System.Windows.Application.Current.Resources[_accentKey])?.Color.ToString() ?? "#059669";
+    public string Accent
+    {
+        get => _accentOverride ?? ((System.Windows.Media.SolidColorBrush)System.Windows.Application.Current.Resources[_accentKey])?.Color.ToString() ?? "#059669";
+        set
+        {
+            _accentOverride = value;
+            OnPropertyChanged();
+        }
+    }
     
     public void RefreshTheme()
     {

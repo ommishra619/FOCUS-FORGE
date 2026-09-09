@@ -6,12 +6,17 @@ public sealed class ProcessBlocker
 {
     public IReadOnlyList<Process> FindRunning(string processName)
     {
-        var normalizedName = Path.GetFileNameWithoutExtension(processName);
+        var normalizedName = Path.GetFileNameWithoutExtension(processName).Trim();
+        if (string.IsNullOrWhiteSpace(normalizedName))
+        {
+            return Array.Empty<Process>();
+        }
+
         var currentId = Process.GetCurrentProcess().Id;
         
         return Process.GetProcesses()
             .Where(p => p.Id != currentId && 
-                        p.ProcessName.Contains(normalizedName, StringComparison.OrdinalIgnoreCase))
+                        string.Equals(p.ProcessName, normalizedName, StringComparison.OrdinalIgnoreCase))
             .ToList();
     }
 
@@ -25,13 +30,25 @@ public sealed class ProcessBlocker
                 if (!process.HasExited)
                 {
                     process.CloseMainWindow();
-                    if (!process.WaitForExit(1500) && !process.HasExited)
+                    if (!process.WaitForExit(1000) && !process.HasExited)
                     {
                         process.Kill(entireProcessTree: true);
+                        process.WaitForExit(1000);
                     }
 
-                    closed++;
+                    if (process.HasExited)
+                    {
+                        closed++;
+                    }
                 }
+            }
+            catch (System.ComponentModel.Win32Exception)
+            {
+                // Access denied or process requires elevation. Ignore.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Access denied. Ignore.
             }
             catch (InvalidOperationException)
             {

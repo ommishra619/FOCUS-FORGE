@@ -1,0 +1,37 @@
+<Window x:Class="FocusForge.App.LockOverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Focus Session Active" 
+        WindowStyle="None" 
+        WindowState="Maximized" 
+        Topmost="True" 
+        Background="{DynamicResource WindowBackgroundBrush}"
+        Foreground="{DynamicResource InkBrush}"
+        FontFamily="Segoe UI"
+        Closing="Window_Closing">
+    <Grid>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="500">
+            <TextBlock Text="🔒" FontSize="72" HorizontalAlignment="Center" Margin="0,0,0,20" Foreground="{DynamicResource TaskWorkAccent}" />
+            <TextBlock Text="Focus Session Active" FontSize="36" FontWeight="Bold" HorizontalAlignment="Center" />
+            <TextBlock x:Name="SubtitleText" Text="[App] is currently blocked to help you stay focused." FontSize="18" HorizontalAlignment="Center" Margin="0,10,0,40" TextWrapping="Wrap" TextAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+            
+            <Border Background="{DynamicResource ComponentBackgroundBrush}" CornerRadius="12" Padding="30" Margin="0,0,0,40">
+                <StackPanel>
+                    <TextBlock Text="TIME REMAINING" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" Margin="0,0,0,10" />
+                    <TextBlock x:Name="CountdownText" Text="Loading..." FontSize="48" FontWeight="Light" HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+
+            <Button Content="Close App" Style="{DynamicResource PrimaryButton}" Height="50" FontSize="18" Click="CloseApp_Click" Margin="0,0,0,15" />
+            
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <PasswordBox x:Name="EmergencyPasswordBox" Grid.Column="0" Height="40" Margin="0,0,10,0" Padding="10" />
+                <Button Grid.Column="1" Content="Emergency Unlock" Style="{DynamicResource SecondaryButton}" Height="40" Click="EmergencyUnlock_Click" />
+            </Grid>
+        </StackPanel>
+    </Grid>
+</Window>

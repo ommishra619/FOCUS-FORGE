@@ -23,6 +23,36 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        
+        try
+        {
+            var agentName = "FocusForge.Agent";
+            if (System.Diagnostics.Process.GetProcessesByName(agentName).Length == 0)
+            {
+                var basePath = AppDomain.CurrentDomain.BaseDirectory;
+                var agentPaths = new[]
+                {
+                    System.IO.Path.Combine(basePath, "FocusForge.Agent.exe"),
+                    System.IO.Path.GetFullPath(System.IO.Path.Combine(basePath, "..", "..", "..", "..", "FocusForge.Agent", "bin", "Debug", "net8.0-windows", "FocusForge.Agent.exe"))
+                };
+                var agentPath = System.Array.Find(agentPaths, System.IO.File.Exists);
+
+                if (agentPath is not null)
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = agentPath,
+                        UseShellExecute = true,
+                        CreateNoWindow = true
+                    });
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Ignore startup errors for the agent
+        }
+
         var loginWindow = new LoginWindow();
         loginWindow.Show();
     }
