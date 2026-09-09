@@ -26,8 +26,8 @@ public sealed class LocalStore<T> where T : new()
             return new T();
         }
 
-        await using var stream = File.OpenRead(_path);
-        return await JsonSerializer.DeserializeAsync<T>(stream, JsonOptions) ?? new T();
+        await using var stream = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        return await JsonSerializer.DeserializeAsync<T>(stream, JsonOptions).ConfigureAwait(false) ?? new T();
     }
 
     public async Task SaveAsync(T value)
@@ -35,7 +35,7 @@ public sealed class LocalStore<T> where T : new()
         var temporaryPath = _path + ".tmp";
         await using (var stream = File.Create(temporaryPath))
         {
-            await JsonSerializer.SerializeAsync(stream, value, JsonOptions);
+            await JsonSerializer.SerializeAsync(stream, value, JsonOptions).ConfigureAwait(false);
         }
 
         File.Move(temporaryPath, _path, overwrite: true);

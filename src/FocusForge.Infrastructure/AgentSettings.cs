@@ -12,4 +12,5 @@ public sealed class AgentSettings
 
     public static Task<AgentSettings> LoadAsync() => Store.LoadAsync();
     public void Save() => Store.SaveAsync(this).GetAwaiter().GetResult();
+    public Task SaveAsync() => Store.SaveAsync(this);
 }

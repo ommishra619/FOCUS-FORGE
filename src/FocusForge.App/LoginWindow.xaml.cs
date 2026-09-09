@@ -41,7 +41,7 @@ public partial class LoginWindow : Window
         }
     }
 
-    private void ActionButton_Click(object sender, RoutedEventArgs e)
+    private async void ActionButton_Click(object sender, RoutedEventArgs e)
     {
         ErrorText.Visibility = Visibility.Collapsed;
 
@@ -55,25 +55,33 @@ public partial class LoginWindow : Window
             return;
         }
 
-        if (_isSetupMode)
+        try
         {
-            _settings.UserName = name;
-            _settings.Password = pass;
-            _settings.Save();
-            
-            OpenMainWindow();
-        }
-        else
-        {
-            if (pass == _settings.Password)
+            if (_isSetupMode)
             {
+                _settings.UserName = name;
+                _settings.Password = pass;
+                await _settings.SaveAsync();
+                
                 OpenMainWindow();
             }
             else
             {
-                ErrorText.Text = "Incorrect password.";
-                ErrorText.Visibility = Visibility.Visible;
+                if (pass == _settings.Password)
+                {
+                    OpenMainWindow();
+                }
+                else
+                {
+                    ErrorText.Text = "Incorrect password.";
+                    ErrorText.Visibility = Visibility.Visible;
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            ErrorText.Text = $"Error: {ex.Message}";
+            ErrorText.Visibility = Visibility.Visible;
         }
     }
 
