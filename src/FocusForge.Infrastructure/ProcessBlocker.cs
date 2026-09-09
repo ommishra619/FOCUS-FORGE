@@ -7,7 +7,12 @@ public sealed class ProcessBlocker
     public IReadOnlyList<Process> FindRunning(string processName)
     {
         var normalizedName = Path.GetFileNameWithoutExtension(processName);
-        return Process.GetProcessesByName(normalizedName);
+        var currentId = Process.GetCurrentProcess().Id;
+        
+        return Process.GetProcesses()
+            .Where(p => p.Id != currentId && 
+                        p.ProcessName.Contains(normalizedName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
     }
 
     public int CloseRunning(string processName)

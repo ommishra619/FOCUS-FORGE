@@ -41,6 +41,17 @@ public sealed class AgentHost : ApplicationContext
 
     private void EnforceLocks()
     {
+        using (var db = new AppDbContext())
+        {
+            var latest = System.Linq.Queryable.FirstOrDefault(db.AgentSettings, s => s.Id == _settings.Id);
+            if (latest != null)
+            {
+                _settings.IsLocked = latest.IsLocked;
+                _settings.ProtectedProcessNames = latest.ProtectedProcessNames;
+                _settings.LockUntilUtc = latest.LockUntilUtc;
+            }
+        }
+
         if (_settings.IsLocked && _settings.LockUntilUtc is not null && DateTimeOffset.UtcNow >= _settings.LockUntilUtc)
         {
             _settings.IsLocked = false;

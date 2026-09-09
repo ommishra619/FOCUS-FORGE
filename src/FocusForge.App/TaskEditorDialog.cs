@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -11,11 +12,11 @@ namespace FocusForge.App;
 
 public partial class TaskEditorDialog : Window
 {
-    private readonly System.Collections.ObjectModel.ObservableCollection<string> _checklistItemsList = new();
+    private readonly ObservableCollection<string> _checklistItemsList = new();
 
     public string TaskTitle => TitleInput.Text.Trim();
     public string Detail => DetailInput.Text.Trim();
-    public string TimeLabel => TimeInput.Text.Trim();
+    public string TimeLabel => TimeInput.Text?.Trim() ?? string.Empty;
     public TaskScheduleKind ScheduleKind => ((ScheduleChoice)ScheduleInput.SelectedItem).Kind;
     public DateTimeOffset? DueAt => ScheduleKind == TaskScheduleKind.SpecificDate && DueDateInput.SelectedDate.HasValue
         ? new DateTimeOffset(DueDateInput.SelectedDate.Value)
@@ -29,6 +30,9 @@ public partial class TaskEditorDialog : Window
         InitializeComponent();
         
         HeadingText.Text = heading;
+        TitleLabelText.Text = titleLabel;
+        DetailLabelText.Text = detailLabel;
+        TimeLabelText.Text = timeLabel;
         
         // Setup Schedule choices
         ScheduleInput.ItemsSource = new[]

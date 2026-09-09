@@ -15,6 +15,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private bool _sessionFinished;
     private AgentSettings _agentSettings = new();
     private WorkspaceState _workspaceState = new();
+    private readonly ProcessBlocker _processBlocker = new();
 
     public ObservableCollection<FocusTask> Tasks { get; } = new()
     {
@@ -24,10 +25,27 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         new FocusTask { Title = "Plan tomorrow", Detail = "Close the day with intention", TimeLabel = "06:00 - 06:15" }
     };
 
+    public string CurrentDate { get; set; } = DateTime.Now.ToString("dddd, MMMM d");
+    
+    private string _userGreeting = "";
+    public string UserGreeting
+    {
+        get => _userGreeting;
+        set { _userGreeting = value; OnPropertyChanged(nameof(UserGreeting)); }
+    }
+
+    private string _currentGreeting = "";
+    public string CurrentGreeting
+    {
+        get => _currentGreeting;
+        set { _currentGreeting = value; OnPropertyChanged(nameof(CurrentGreeting)); }
+    }
+
     public string FocusTimeLabel => _sessionFinished ? "Complete" : FormatRemaining(_focusEndsAt - DateTime.Now);
-    public string FocusStatus => _sessionFinished ? "Session complete. Steam is ready to unlock." : "Steam is protected until this session ends.";
+    public string FocusStatus => _sessionFinished ? "Session complete." : "Apps are protected until this session ends.";
     public string ProtectionState => _sessionFinished ? "Unlocked" : "Locked";
     public string ProtectionColor => _sessionFinished ? "#7EE7C7" : "#FF8D8D";
+    public Visibility FinishButtonVisibility => _sessionFinished ? Visibility.Collapsed : Visibility.Visible;
 
     public MainWindow()
     {
@@ -61,20 +79,22 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void FinishSession_Click(object sender, RoutedEventArgs e)
     {
-        _sessionFinished = true;
-        _agentSettings.IsLocked = false;
-        _agentSettings.Save();
-        _focusTimer.Stop();
+        EndSession();
         NotifyFocusChanged();
     }
 
     private void EmergencyUnlock_Click(object sender, RoutedEventArgs e)
     {
+        EndSession();
+        NotifyFocusChanged();
+    }
+
+    private void EndSession()
+    {
         _sessionFinished = true;
         _agentSettings.IsLocked = false;
         _agentSettings.Save();
         _focusTimer.Stop();
-        NotifyFocusChanged();
     }
 
     private void LockSteam_Click(object sender, RoutedEventArgs e)
@@ -137,6 +157,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         _agentSettings = await AgentSettings.LoadAsync();
         _workspaceState = await WorkspaceState.LoadAsync();
+        
+        GenerateGreeting();
+        
         if (_workspaceState.Tasks.Count > 0)
         {
             Tasks.Clear();
@@ -154,6 +177,35 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         OnPropertyChanged(nameof(Schedule));
+    }
+
+    private void GenerateGreeting()
+    {
+        var quotes = new[]
+        {
+            "The secret of getting ahead is getting started.",
+            "Small steps every day.",
+            "Focus on being productive instead of busy.",
+            "Strive for progress, not perfection.",
+            "Do what you can, with what you have, where you are.",
+            "It always seems impossible until it's done.",
+            "Discipline is choosing between what you want now and what you want most.",
+            "Where attention goes, energy flows."
+        };
+        
+        var random = new Random();
+        var quote = quotes[random.Next(quotes.Length)];
+        
+        string timeGreeting;
+        var hour = DateTime.Now.Hour;
+        if (hour < 12) timeGreeting = "Good morning";
+        else if (hour < 17) timeGreeting = "Good afternoon";
+        else timeGreeting = "Good evening";
+
+        var name = string.IsNullOrWhiteSpace(_agentSettings.UserName) ? "" : $", {_agentSettings.UserName}";
+        
+        UserGreeting = $"{timeGreeting}{name}.";
+        CurrentGreeting = quote;
     }
 
     private void SaveWorkspace()
@@ -175,10 +227,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (DateTime.Now >= _focusEndsAt)
         {
-            _sessionFinished = true;
-            _agentSettings.IsLocked = false;
-            _agentSettings.Save();
-            _focusTimer.Stop();
+            EndSession();
+        }
+        else if (_agentSettings.IsLocked)
+        {
+            foreach (var processName in _agentSettings.ProtectedProcessNames)
+            {
+                _processBlocker.CloseRunning(processName);
+            }
         }
 
         NotifyFocusChanged();
@@ -190,6 +246,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FocusStatus)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ProtectionState)));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ProtectionColor)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FinishButtonVisibility)));
     }
 
     private void OnPropertyChanged(string propertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -245,8 +302,19 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void ConfigureProtectedApps_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new ProtectedAppsDialog(new System.Collections.Generic.List<string>()) { Owner = this };
-        dialog.ShowDialog();
+        var dialog = new ProtectedAppsDialog(_agentSettings.ProtectedProcessNames) { Owner = this };
+        if (dialog.ShowDialog() == true)
+        {
+            _agentSettings.ProtectedProcessNames = dialog.ProcessNames.ToList();
+            _agentSettings.IsLocked = true;
+            _agentSettings.LockUntilUtc = dialog.Duration.TotalMinutes > 0 ? DateTimeOffset.UtcNow.Add(dialog.Duration) : null;
+            _agentSettings.Save();
+            
+            _sessionFinished = false;
+            _focusEndsAt = dialog.Duration.TotalMinutes > 0 ? DateTime.Now.Add(dialog.Duration) : DateTime.MaxValue;
+            _focusTimer.Start();
+            NotifyFocusChanged();
+        }
     }
 
     private void ChangeAccentColor_Click(object sender, RoutedEventArgs e)
@@ -269,10 +337,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             // Update the hex code text blocks based on the theme
             if (BgColorText != null && FgColorText != null && AcColorText != null)
             {
-                if (themeName == "RedWhiteTheme") { BgColorText.Text = "# FFFFFF"; FgColorText.Text = "# DC2626"; AcColorText.Text = "# DC2626"; }
-                else if (themeName == "PinkWhiteTheme") { BgColorText.Text = "# F472B6"; FgColorText.Text = "# FFFFFF"; AcColorText.Text = "# FFFFFF"; }
-                else if (themeName == "BlueWhiteTheme") { BgColorText.Text = "# 38BDF8"; FgColorText.Text = "# FFFFFF"; AcColorText.Text = "# FFFFFF"; }
-                else if (themeName == "BlackWhiteTheme") { BgColorText.Text = "# 000000"; FgColorText.Text = "# FFFFFF"; AcColorText.Text = "# FFFFFF"; }
+                switch (themeName)
+                {
+                    case "RedWhiteTheme": BgColorText.Text = "# FFFFFF"; FgColorText.Text = "# DC2626"; AcColorText.Text = "# DC2626"; break;
+                    case "PinkWhiteTheme": BgColorText.Text = "# F472B6"; FgColorText.Text = "# FFFFFF"; AcColorText.Text = "# FFFFFF"; break;
+                    case "BlueWhiteTheme": BgColorText.Text = "# 38BDF8"; FgColorText.Text = "# FFFFFF"; AcColorText.Text = "# FFFFFF"; break;
+                    case "BlackWhiteTheme": BgColorText.Text = "# 000000"; FgColorText.Text = "# FFFFFF"; AcColorText.Text = "# FFFFFF"; break;
+                }
             }
             
             OnPropertyChanged(nameof(ProtectionColor));

@@ -1,0 +1,40 @@
+<Window x:Class="FocusForge.App.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="FocusForge - Login" Height="450" Width="400"
+        Background="{DynamicResource WindowBackgroundBrush}"
+        Foreground="{DynamicResource InkBrush}"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize">
+    <Grid>
+        <Border Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource PanelAltBrush}" BorderThickness="1" CornerRadius="12" Margin="32" Padding="32">
+            <StackPanel VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,24">
+                    <Border Width="40" Height="40" Background="{DynamicResource AccentBrush}" CornerRadius="12" Margin="0,0,12,0">
+                        <TextBlock Text="F" Foreground="{DynamicResource PrimaryButtonForegroundBrush}" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="FOCUSFORGE" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" Foreground="{DynamicResource InkBrush}" />
+                </StackPanel>
+                
+                <TextBlock x:Name="SubtitleText" Text="Welcome" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,8" />
+                <TextBlock x:Name="InstructionsText" Text="Please enter your name and password." Foreground="{DynamicResource MutedBrush}" FontSize="13" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,24" />
+
+                <TextBlock Text="Name" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="{DynamicResource InkBrush}" />
+                <TextBox x:Name="NameTextBox" Height="36" Padding="8,0" Margin="0,0,0,16" 
+                         Background="{DynamicResource PanelAltBrush}" Foreground="{DynamicResource InkBrush}" 
+                         BorderBrush="{DynamicResource GhostButtonBorderBrush}" BorderThickness="1"
+                         VerticalContentAlignment="Center" />
+
+                <TextBlock Text="Password" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4" Foreground="{DynamicResource InkBrush}" />
+                <PasswordBox x:Name="PasswordBox" Height="36" Padding="8,0" Margin="0,0,0,24" 
+                             Background="{DynamicResource PanelAltBrush}" Foreground="{DynamicResource InkBrush}" 
+                             BorderBrush="{DynamicResource GhostButtonBorderBrush}" BorderThickness="1"
+                             VerticalContentAlignment="Center" />
+
+                <Button x:Name="ActionButton" Content="Enter" Style="{DynamicResource PrimaryButton}" Click="ActionButton_Click" />
+                
+                <TextBlock x:Name="ErrorText" Foreground="#EF4444" FontSize="12" TextAlignment="Center" Margin="0,16,0,0" Visibility="Collapsed" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

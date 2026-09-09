@@ -3,7 +3,7 @@
     <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#F472B6" />
     <SolidColorBrush x:Key="InkBrush" Color="#FFFFFF" />
     <SolidColorBrush x:Key="MutedBrush" Color="#FCE7F3" />
-    <SolidColorBrush x:Key="PanelBrush" Color="#F472B6" />
+    <SolidColorBrush x:Key="PanelBrush" Color="#33FFFFFF" />
     <SolidColorBrush x:Key="PanelAltBrush" Color="#EC4899" />
     <SolidColorBrush x:Key="AccentBrush" Color="#FFFFFF" />
     <SolidColorBrush x:Key="WarmBrush" Color="#FFFFFF" />

@@ -19,4 +19,11 @@ public partial class App : Application
         }
         mergedDicts.Add(dict);
     }
+
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        base.OnStartup(e);
+        var loginWindow = new LoginWindow();
+        loginWindow.Show();
+    }
 }

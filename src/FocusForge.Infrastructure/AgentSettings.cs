@@ -10,6 +10,8 @@ public sealed class AgentSettings
     public bool IsLocked { get; set; }
     public List<string> ProtectedProcessNames { get; set; } = new();
     public DateTimeOffset? LockUntilUtc { get; set; }
+    public string UserName { get; set; } = "";
+    public string Password { get; set; } = "";
 
     public static async Task<AgentSettings> LoadAsync()
     {
@@ -34,6 +36,8 @@ public sealed class AgentSettings
             existing.IsLocked = IsLocked;
             existing.ProtectedProcessNames = ProtectedProcessNames;
             existing.LockUntilUtc = LockUntilUtc;
+            existing.UserName = UserName;
+            existing.Password = Password;
             db.SaveChanges();
         }
     }
