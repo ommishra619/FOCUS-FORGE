@@ -31,7 +31,7 @@
                              BorderBrush="{DynamicResource GhostButtonBorderBrush}" BorderThickness="1"
                              VerticalContentAlignment="Center" />
 
-                <Button x:Name="ActionButton" Content="Enter" Style="{DynamicResource PrimaryButton}" Click="ActionButton_Click" />
+                <Button x:Name="ActionButton" Content="Enter" Style="{DynamicResource PrimaryButton}" IsDefault="True" Click="ActionButton_Click" />
                 
                 <TextBlock x:Name="ErrorText" Foreground="#EF4444" FontSize="12" TextAlignment="Center" Margin="0,16,0,0" Visibility="Collapsed" />
             </StackPanel>

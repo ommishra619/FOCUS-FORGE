@@ -25,6 +25,8 @@ public partial class LoginWindow : Window
             SubtitleText.Text = "Welcome to FocusForge";
             InstructionsText.Text = "This is your first time here. Let's set up your profile.";
             ActionButton.Content = "Create Profile";
+            
+            NameTextBox.Focus();
         }
         else
         {
@@ -34,6 +36,8 @@ public partial class LoginWindow : Window
             NameTextBox.Text = _settings.UserName;
             NameTextBox.IsEnabled = false;
             ActionButton.Content = "Login";
+            
+            PasswordBox.Focus();
         }
     }
 
